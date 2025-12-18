@@ -52,7 +52,9 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Arrancar servidor en puerto 3000
-app.listen(3000, () => {
-  console.log('Servidor backend corriendo en http://localhost:3000');
+// Esto permite que Render elija el puerto automáticamente
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor funcionando en el puerto ${PORT}`);
 });
