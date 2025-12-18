@@ -6,8 +6,8 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthService {
-  // Aquí decimos dónde está nuestro servidor (el archivo server.js)
-  private apiUrl = 'http://localhost:3000/api';
+  // Al poner solo '/api', Angular buscará el servidor en la misma URL de Render
+  private apiUrl = '/api';
 
   constructor(private http: HttpClient) { }
 
