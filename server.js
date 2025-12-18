@@ -54,7 +54,18 @@ app.post('/api/login', async (req, res) => {
 
 // Esto permite que Render elija el puerto automáticamente
 const PORT = process.env.PORT || 3000;
+const path = require('path');
 
+// Unimos la ruta hasta llegar a la carpeta 'browser' que es donde está el index.html
+const carpetaAngular = path.join(__dirname, 'dist/liga-deportiva/browser');
+
+// Servimos los archivos (CSS, JS, Imágenes)
+app.use(express.static(carpetaAngular));
+
+// Si alguien entra en la raíz o cualquier otra ruta, le mandamos el index.html
+app.get('*', (req, res) => {
+    res.sendFile(path.join(carpetaAngular, 'index.html'));
+});
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor funcionando en el puerto ${PORT}`);
 });
