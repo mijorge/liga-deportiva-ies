@@ -1,38 +1,33 @@
-// server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const path = require('path'); // Movido arriba con los demás
 
 const app = express();
-app.use(cors()); // Permite que Angular hable con el servidor
+app.use(cors()); 
 app.use(bodyParser.json());
 
-// --- TU CADENA DE MONGODB AQUÍ ---
-// Sustituye <password> por tu contraseña real
-const dbURI = 'mongodb+srv://admin:admin123@cluster0.5xu7m4p.mongodb.net/?appName=Cluster0'; 
+// 1. CONEXIÓN A MONGO (He añadido /liga para que cree esa base de datos)
+const dbURI = 'mongodb+srv://admin:admin123@cluster0.5xu7m4p.mongodb.net/liga?retryWrites=true&w=majority'; 
 
 mongoose.connect(dbURI)
   .then(() => console.log('Conectado a MongoDB Atlas'))
   .catch((err) => console.log('Error de conexión:', err));
 
-// --- ESQUEMA DE USUARIO (Como pide el PDF) ---
+// 2. ESQUEMA
 const UsuarioSchema = new mongoose.Schema({
   nombre: String,
   email: String,
-  password: String, // En la vida real se cifra, aquí lo haremos simple por ahora
-  rol: String // "admin", "usuario", "capitan", "arbitro"
+  password: String, 
+  rol: String 
 });
-
 const Usuario = mongoose.model('Usuario', UsuarioSchema);
 
-// --- RUTAS (Endpoints) ---
-
-// 1. Registro (POST)
+// 3. RUTAS API
 app.post('/api/registro', async (req, res) => {
-  const { nombre, email, password, rol } = req.body;
   try {
-    const nuevoUsuario = new Usuario({ nombre, email, password, rol });
+    const nuevoUsuario = new Usuario(req.body);
     await nuevoUsuario.save();
     res.json({ mensaje: 'Usuario registrado con éxito' });
   } catch (error) {
@@ -40,32 +35,31 @@ app.post('/api/registro', async (req, res) => {
   }
 });
 
-// 2. Login (POST) - El PDF dice GET para rescatar, pero por seguridad se suele usar POST para enviar credenciales
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
-  const usuario = await Usuario.findOne({ email: email, password: password });
-  
-  if (usuario) {
-    res.json(usuario); // Devolvemos el usuario con su ROL
-  } else {
-    res.status(401).json({ error: 'Credenciales incorrectas' });
+  try {
+    const usuario = await Usuario.findOne({ email, password });
+    if (usuario) {
+      res.json(usuario);
+    } else {
+      res.status(401).json({ error: 'Credenciales incorrectas' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error en el login' });
   }
 });
 
-// Esto permite que Render elija el puerto automáticamente
-const PORT = process.env.PORT || 3000;
-const path = require('path');
-
-// Unimos la ruta hasta llegar a la carpeta 'browser' que es donde está el index.html
+// 4. SERVIR ANGULAR (IMPORTANTE: Esto va DESPUÉS de las rutas API)
 const carpetaAngular = path.join(__dirname, 'dist/liga-deportiva/browser');
-
-// Servimos los archivos (CSS, JS, Imágenes)
 app.use(express.static(carpetaAngular));
 
-// Si alguien entra en la raíz o cualquier otra ruta, le mandamos el index.html
-app.get('*', (req, res) => {
+// Usamos una expresión regular compatible con versiones nuevas de Express
+app.get(/^\/(?!api).*/, (req, res) => {
     res.sendFile(path.join(carpetaAngular, 'index.html'));
 });
+
+// 5. PUERTO (SOLO UNA VEZ)
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor funcionando en el puerto ${PORT}`);
+    console.log(`Servidor en puerto ${PORT}`);
 });
